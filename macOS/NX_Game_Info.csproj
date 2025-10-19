@@ -1,0 +1,94 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0-macos15.0</TargetFramework>
+    <RuntimeIdentifier>osx-arm64</RuntimeIdentifier>
+    <UseMacAppHost>true</UseMacAppHost>
+    <Nullable>enable</Nullable>
+    <RootNamespace>NX_Game_Info</RootNamespace>
+    <AssemblyName>NX Game Info</AssemblyName>
+    <SupportedOSPlatformVersion>12.0</SupportedOSPlatformVersion>
+    <ProjectGuid>{BBD7E812-1514-4684-BC59-ADDF81760887}</ProjectGuid>
+    <DefineConstants>$(DefineConstants);MACOS</DefineConstants>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <EnableDefaultItems>false</EnableDefaultItems>
+    <Version>$(GameInfoVersion)</Version>
+    <AssemblyVersion>$(GameInfoVersion)</AssemblyVersion>
+    <FileVersion>$(GameInfoVersion)</FileVersion>
+    <CFBundleShortVersionString>$(GameInfoVersion)</CFBundleShortVersionString>
+    <CFBundleVersion>$(GameInfoBuildNumber)</CFBundleVersion>
+  </PropertyGroup>
+  <PropertyGroup>
+    <AppIconName>AppIcon</AppIconName>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Common.cs" />
+    <Compile Include="Main.cs" />
+    <Compile Include="MainWindow.cs" />
+    <Compile Include="MainWindow.designer.cs" />
+    <Compile Include="MainWindowController.cs" />
+    <Compile Include="MainWindowController.designer.cs" />
+    <Compile Include="AppDelegate.cs" />
+    <Compile Include="Process.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <AssetCatalog Include="Assets.xcassets" />
+    <None Include="Info.plist" />
+    <None Include="PropertyList.plist" />
+  </ItemGroup>
+  <ItemGroup>
+    <InterfaceDefinition Include="MainMenu.xib" />
+    <InterfaceDefinition Include="MainWindow.xib" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\NX.GameInfo.Core\NX.GameInfo.Core.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="EPPlus" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <AppIconIntermediatePath>$(IntermediateOutputPath)actool/bundle/AppIcon.icns</AppIconIntermediatePath>
+    <AppIconDestinationPath>$(MSBuildProjectDirectory)/bin/$(Configuration)/$(TargetFramework)/$(RuntimeIdentifier)/$(AssemblyName).app/Contents/Resources/AppIcon.icns</AppIconDestinationPath>
+  </PropertyGroup>
+
+  <!-- Fallback: compile asset catalog with xcrun actool if AppIcon.icns is not produced by MSBuild -->
+  <Target Name="CompileAppIconIfMissing"
+          BeforeTargets="EnsureAppIcon"
+          Condition="'$(OS)' == 'Unix' and Exists('$(MSBuildProjectDirectory)/Assets.xcassets') and !Exists('$(AppIconIntermediatePath)')">
+    <Message Importance="high" Text="[Fallback] Compiling asset catalog with xcrun actool..." />
+    <MakeDir Directories="$(IntermediateOutputPath)actool/bundle" />
+    <MakeDir Directories="$(IntermediateOutputPath)actool" />
+    <Exec Command="xcrun actool --output-format human-readable-text --notices --warnings --errors --platform macosx --minimum-deployment-target $(SupportedOSPlatformVersion) --app-icon $(AppIconName) --output-partial-info-plist &quot;$(IntermediateOutputPath)actool/partial-info.plist&quot; --compile &quot;$(IntermediateOutputPath)actool/bundle&quot; &quot;$(MSBuildProjectDirectory)/Assets.xcassets&quot;" />
+  </Target>
+
+  <!-- Ensure the compiled AppIcon is copied and fail the build if missing -->
+  <Target Name="EnsureAppIcon"
+          AfterTargets="CompileAssetCatalogs;_CreateAppBundle">
+    <MakeDir Directories="$(TargetDir)$(AssemblyName).app/Contents/Resources" />
+    <ItemGroup>
+      <AppIconCandidate Include="$(AppIconIntermediatePath)"
+                        Condition="Exists('$(AppIconIntermediatePath)')" />
+    </ItemGroup>
+    <Copy SourceFiles="@(AppIconCandidate)"
+          DestinationFiles="$(AppIconDestinationPath)"
+          SkipUnchangedFiles="true"
+          Condition="@(AppIconCandidate) != ''" />
+    <ItemGroup Condition="!Exists('$(AppIconDestinationPath)')">
+      <AppIconFallback Include="$(MSBuildProjectDirectory)/obj/**/AppIcon.icns" />
+      <AppIconFallback Include="$(MSBuildProjectDirectory)/bin/**/AppIcon.icns" />
+    </ItemGroup>
+    <Copy SourceFiles="@(AppIconFallback)"
+          DestinationFiles="@(AppIconFallback -> '$(AppIconDestinationPath)')"
+          SkipUnchangedFiles="true"
+          Condition="!Exists('$(AppIconDestinationPath)') and '@(AppIconFallback)' != ''" />
+    <Error Condition="!Exists('$(AppIconDestinationPath)')"
+           Text="AppIcon.icns missing from '$(AppIconDestinationPath)'. Ensure the asset catalog builds correctly." />
+  </Target>
+  <Target Name="PrintBuildMetadata">
+    <Message Importance="high" Text="GameInfoVersion=$(GameInfoVersion)" />
+    <Message Importance="high" Text="GameInfoBuildNumber=$(GameInfoBuildNumber)" />
+  </Target>
+</Project>

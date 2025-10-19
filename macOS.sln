@@ -1,0 +1,30 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NX_Game_Info", "macOS\NX_Game_Info.csproj", "{BBD7E812-1514-4684-BC59-ADDF81760887}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NX.GameInfo.Core", "src\NX.GameInfo.Core\NX.GameInfo.Core.csproj", "{4A9B6F83-287C-4C02-9B4B-DAEB960563D4}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{BBD7E812-1514-4684-BC59-ADDF81760887}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BBD7E812-1514-4684-BC59-ADDF81760887}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BBD7E812-1514-4684-BC59-ADDF81760887}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BBD7E812-1514-4684-BC59-ADDF81760887}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4A9B6F83-287C-4C02-9B4B-DAEB960563D4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4A9B6F83-287C-4C02-9B4B-DAEB960563D4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4A9B6F83-287C-4C02-9B4B-DAEB960563D4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4A9B6F83-287C-4C02-9B4B-DAEB960563D4}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {4615D14A-53B7-4881-8235-AB7D90B45B80}
+	EndGlobalSection
+EndGlobal
