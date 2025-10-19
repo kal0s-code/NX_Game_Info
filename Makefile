@@ -35,11 +35,33 @@ publish-macos: build-macos
 
 dmg: publish-macos
 		@echo "💿 Creating DMG..."
-		@hdiutil create -volname "NX Game Info" \
-			-srcfolder "$(BUILD_DIR)/osx-arm64/NX Game Info.app" \
-			-ov -format UDZO \
-			"macOS/bin/$(BUILD_CONFIG)/$(DMG_NAME)"
-		@echo "✅ DMG created: macOS/bin/$(BUILD_CONFIG)/$(DMG_NAME)"
+		@APP_DIR="$(BUILD_DIR)/osx-arm64"; \
+		 APP_PATH="$$APP_DIR/NX Game Info.app"; \
+		 DMG_OUT="macOS/bin/$(BUILD_CONFIG)/$(DMG_NAME)"; \
+		 if command -v create-dmg >/dev/null 2>&1; then \
+		   echo "➡ Using create-dmg"; \
+		   rm -f "$$DMG_OUT"; \
+		   create-dmg \
+		     --volname "NX Game Info" \
+		     --volicon "$$APP_PATH/Contents/Resources/AppIcon.icns" \
+		     --window-pos 200 120 --window-size 600 400 \
+		     --icon-size 96 \
+		     --icon "NX Game Info.app" 110 150 \
+		     --app-drop-link 480 150 \
+		     --overwrite \
+		     "$$DMG_OUT" "$$APP_DIR"; \
+		 else \
+		   echo "➡ Using hdiutil fallback"; \
+		   STAGING_DIR="$$(mktemp -d)"; \
+		   cp -R "$$APP_PATH" "$$STAGING_DIR/"; \
+		   ln -s /Applications "$$STAGING_DIR/Applications"; \
+		   hdiutil create -volname "NX Game Info" \
+		     -srcfolder "$$STAGING_DIR" \
+		     -ov -format UDZO \
+		     "$$DMG_OUT"; \
+		   rm -rf "$$STAGING_DIR"; \
+		 fi; \
+		 echo "✅ DMG created: $$DMG_OUT"
 
 all-macos: clean-macos dmg
 	@echo "✅ macOS build complete!"

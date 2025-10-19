@@ -7,7 +7,7 @@
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
   </PropertyGroup>
   <PropertyGroup>
-    <GameInfoVersion>0.7.2.0</GameInfoVersion>
-    <GameInfoBuildNumber>15</GameInfoBuildNumber>
+    <GameInfoVersion>0.7.2.1</GameInfoVersion>
+    <GameInfoBuildNumber>16</GameInfoBuildNumber>
   </PropertyGroup>
 </Project>

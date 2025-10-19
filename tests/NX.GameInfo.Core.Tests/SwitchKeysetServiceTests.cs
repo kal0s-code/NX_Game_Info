@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.IO;
 using System.Net;
 using System.Net.Http;
@@ -80,6 +81,108 @@ public sealed class SwitchKeysetServiceTests
             };
 
             return Task.FromResult(response);
+        }
+    }
+
+    [Fact]
+    public void LoadAsync_WithDebugLogging_CompletesWhenWaitedSynchronously()
+    {
+        using var syncContext = new SingleThreadSynchronizationContext();
+        var previousContext = SynchronizationContext.Current;
+        SynchronizationContext.SetSynchronizationContext(syncContext);
+
+        string tempDirectory = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDirectory);
+
+        try
+        {
+            File.WriteAllText(Path.Combine(tempDirectory, "prod.keys"), "header_key = 00");
+
+            using var service = new SwitchKeysetService(NullLogger<SwitchKeysetService>.Instance);
+            var options = new SwitchKeysetOptions
+            {
+                KeysDirectory = tempDirectory,
+                EnableDebugLogging = true
+            };
+
+            var loadTask = Task.Run(() => service.LoadAsync(options));
+            bool completed = loadTask.Wait(TimeSpan.FromSeconds(5));
+
+            Assert.True(completed, "SwitchKeysetService.LoadAsync did not complete when waited synchronously with debug logging enabled.");
+            Assert.NotNull(loadTask.Result.LogWriter);
+        }
+        finally
+        {
+            SynchronizationContext.SetSynchronizationContext(previousContext);
+            Directory.Delete(tempDirectory, recursive: true);
+        }
+    }
+
+    private sealed class SingleThreadSynchronizationContext : SynchronizationContext, IDisposable
+    {
+        private readonly BlockingCollection<(SendOrPostCallback Callback, object? State)> _queue = new();
+        private readonly Thread _thread;
+
+        public SingleThreadSynchronizationContext()
+        {
+            _thread = new Thread(Run)
+            {
+                IsBackground = true,
+                Name = nameof(SingleThreadSynchronizationContext)
+            };
+            _thread.Start();
+        }
+
+        public override void Post(SendOrPostCallback d, object? state)
+        {
+            if (!_queue.IsAddingCompleted)
+            {
+                _queue.Add((d, state));
+            }
+        }
+
+        public override void Send(SendOrPostCallback d, object? state)
+        {
+            using var evt = new ManualResetEventSlim(false);
+            Exception? captured = null;
+
+            Post(s =>
+            {
+                try
+                {
+                    d(s);
+                }
+                catch (Exception ex)
+                {
+                    captured = ex;
+                }
+                finally
+                {
+                    evt.Set();
+                }
+            }, state);
+
+            evt.Wait();
+
+            if (captured != null)
+            {
+                throw new AggregateException(captured);
+            }
+        }
+
+        private void Run()
+        {
+            SynchronizationContext.SetSynchronizationContext(this);
+            foreach (var (callback, state) in _queue.GetConsumingEnumerable())
+            {
+                callback(state);
+            }
+        }
+
+        public void Dispose()
+        {
+            _queue.CompleteAdding();
+            _thread.Join();
         }
     }
 }
